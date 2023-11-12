@@ -13,14 +13,22 @@ const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
+// Load Earth texture map
+const textureLoader = new THREE.TextureLoader()
+const earthTexture = textureLoader.load('../world.jpg')
+
 // Sphere creation
-const geometry = new THREE.SphereGeometry(3, 32, 32)
-const material = new THREE.MeshBasicMaterial({ color: 0x91bfff })
+const geometry = new THREE.SphereGeometry(5, 32, 32)
+// Scale the Y-axis to create an oblate spheroid shape
+// The Earth's polar radius is about 98.3% of its equatorial radius
+geometry.scale(1, 0.983, 1)
+
+const material = new THREE.MeshBasicMaterial({ map: earthTexture })
 const sphere = new THREE.Mesh(geometry, material)
 scene.add(sphere)
 
 // Plane creation
-const planeGeometry = new THREE.PlaneGeometry(10, 10, 32, 32)
+const planeGeometry = new THREE.PlaneGeometry(12, 12, 32, 32)
 const planeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,
   side: THREE.DoubleSide,
@@ -41,10 +49,35 @@ directionalLight.position.set(2, 2, 2)
 scene.add(directionalLight)
 
 // Camera position
-camera.position.z = 10
+camera.position.z = 20
 
 // Initialize OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement)
+
+const raycaster = new THREE.Raycaster()
+const mouse = new THREE.Vector2()
+
+function onMouseClick(event: MouseEvent) {
+  // Calculate mouse position in normalized device coordinates
+  // (-1 to +1) for both components
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+  // Update the picking ray with the camera and mouse position
+  raycaster.setFromCamera(mouse, camera)
+
+  // Calculate objects intersecting the picking ray
+  const intersects = raycaster.intersectObject(sphere)
+
+  if (intersects.length > 0) {
+    // Check if the intersection point is within your button area
+    // This is where you define the logic to determine if the clicked area is a button
+    // For example, checking the intersection point's coordinates
+    console.log('Button on the sphere clicked')
+  }
+}
+
+window.addEventListener('click', onMouseClick)
 
 // Animation loop
 function animate() {
