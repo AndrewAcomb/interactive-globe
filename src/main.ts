@@ -1,10 +1,22 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { Map, View } from 'ol'
+import OSM from 'ol/source/OSM'
+import TileLayer from 'ol/layer/Tile'
 
 const SPHERE_RADIUS = 5
 const SPHERE_WIDTH_SEGMENTS = 128
 const SPHERE_HEIGHT_SEGMENTS = 128
 const CAMERA_HEIGHT = 20
+
+const map = new Map({
+  layers: [new TileLayer({ source: new OSM() })],
+  view: new View({
+    center: [0, 0],
+    zoom: 2,
+  }),
+  target: 'map',
+})
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(
