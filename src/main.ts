@@ -9,13 +9,13 @@ const SPHERE_WIDTH_SEGMENTS = 32
 const SPHERE_HEIGHT_SEGMENTS = 32
 const CAMERA_HEIGHT = 10
 
-const map_data = new Map({
+const osm = new Map({
   layers: [new TileLayer({ source: new OSM() })],
   view: new View({
     center: [0, 0],
     zoom: 2,
   }),
-  target: 'map_data',
+  target: 'osm-map',
 })
 
 const scene = new THREE.Scene()
