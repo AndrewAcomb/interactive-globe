@@ -24,11 +24,13 @@
   <body>
     <div id="cesiumContainer"></div>
     <script>
-      Cesium.Ion.defaultAccessToken = 'cesium_access_token'
+      Cesium.Ion.defaultAccessToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMTgyMmJhYS1iNzlmLTRjZTAtOGU3NC0xMzM4Mjk5NzViM2MiLCJpZCI6MTg4ODczLCJpYXQiOjE3MDQ4NjY2NjV9.qRsnX5M0eRi8fW_zrSloHOxlfOZ37HxCu1OLLmEiF9k'
       const viewer = new Cesium.Viewer('cesiumContainer', {
         imageryProvider: new Cesium.MapboxImageryProvider({
           mapId: 'mapbox.country-boundaries-v1',
-          accessToken: 'mapbox_access_token',
+          accessToken:
+            'pk.eyJ1IjoiYWNvbWJhbmRyZXciLCJhIjoiY2xyMmpodWh0MTJrMjJqcW00bTh4dzN1bSJ9.5k4CrWCAUNheeh6FAAhcLw',
         }),
         baseLayerPicker: false,
         geocoder: false,

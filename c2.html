@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Globe Example with OpenStreetMap</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.82/Build/Cesium/Cesium.js"></script>
+    <link
+      href="https://cesium.com/downloads/cesiumjs/releases/1.82/Build/Cesium/Widgets/widgets.css"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body,
+      #cesiumContainer {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="cesiumContainer"></div>
+    <script>
+      Cesium.Ion.defaultAccessToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMTgyMmJhYS1iNzlmLTRjZTAtOGU3NC0xMzM4Mjk5NzViM2MiLCJpZCI6MTg4ODczLCJpYXQiOjE3MDQ4NjY2NjV9.qRsnX5M0eRi8fW_zrSloHOxlfOZ37HxCu1OLLmEiF9k'
+      const viewer = new Cesium.Viewer('cesiumContainer', {
+        imageryProvider: new Cesium.MapboxImageryProvider({
+          mapId: 'mapbox.country-boundaries-v1',
+          accessToken:
+            'pk.eyJ1IjoiYWNvbWJhbmRyZXciLCJhIjoiY2xyMmpodWh0MTJrMjJqcW00bTh4dzN1bSJ9.5k4CrWCAUNheeh6FAAhcLw',
+        }),
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        fullscreenButton: false,
+        vrButton: false,
+        infoBox: false,
+        creditContainer: undefined,
+      })
+
+      viewer.scene.sun.show = false
+      viewer.scene.skyAtmosphere.show = false
+      viewer.scene.backgroundColor = Cesium.Color.BLACK
+      viewer.cesiumWidget.creditContainer.style.display = 'none'
+
+      // Function to get color based on GDP
+      function getColorByGDP(gdp) {
+        return Cesium.Color(1, 1, 1, 1)
+      }
+
+      // Helper function to convert coordinates for Cesium
+      function convertCoordinatesForCesium(coordinates) {
+        // Flatten the array of coordinates and convert them to degrees
+        return coordinates
+          .flat(2)
+          .reduce((acc, value) => acc.concat([value[0], value[1]]), [])
+      }
+
+      // ... within the fetch and iteration logic
+      fetch('https://andrewacomb.me/countries.ldgeojson')
+        .then((response) => response.text())
+        .then((text) => {
+          const jsonLines = text.trim().split('\n')
+
+          jsonLines.forEach((jsonLine) => {
+            const json = JSON.parse(jsonLine)
+
+            // Handle MultiPolygon
+            if (json.geometry.type === 'MultiPolygon') {
+              json.geometry.coordinates.forEach((polygon) => {
+                const positions = convertCoordinatesForCesium(polygon[0]) // Only the first array for the outer boundary
+                viewer.entities.add({
+                  name: json.properties.ADMIN,
+                  polygon: {
+                    hierarchy: Cesium.Cartesian3.fromDegreesArray(positions),
+                    material: Cesium.Color.WHITE, // Replace with logic for color based on properties
+                  },
+                })
+              })
+            }
+            // Additional else/if blocks to handle other geometry types like Polygon, LineString, etc.
+          })
+        })
+        .catch((error) => console.error('Error:', error))
+
+      // Optional: Add click event listener to display more info
+      viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
+        const pickedEntity = viewer.scene.pick(clickEvent.position)
+        if (Cesium.defined(pickedEntity) && pickedEntity.id) {
+          const entity = pickedEntity.id
+          // Display GDP info or other details
+          console.log('Country: ' + entity.name + ', GDP: ' + entity.gdp)
+        }
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+    </script>
+  </body>
+</html>
