@@ -63,42 +63,54 @@
           .reduce((acc, value) => acc.concat([value[0], value[1]]), [])
       }
 
-      // ... within the fetch and iteration logic
-      fetch('https://andrewacomb.me/countries.ldgeojson')
-        .then((response) => response.text())
-        .then((text) => {
-          const jsonLines = text.trim().split('\n')
+      fetch('https://andrewacomb.me/countries.geojson') // Replace with the URL to your GeoJSON file
+        .then((response) => response.json())
+        .then((data) => {
+          const features = data.features
+          for (const feature of features) {
+            console.log(feature)
+            let coordinates = feature.geometry.coordinates
 
-          jsonLines.forEach((jsonLine) => {
-            const json = JSON.parse(jsonLine)
+            // For 'Polygon' type geometries
+            if (feature.geometry.type === 'Polygon') {
+              // The first array in 'coordinates' is the outer boundary.
+              // Additional arrays would be holes.
+              console.log(coordinates)
+              console.log(Cesium.defined(coordinates))
+              const hierarchy = new Cesium.PolygonHierarchy(
+                Cesium.Cartesian3.fromDegreesArrayHeights(coordinates)
+              )
 
-            // Handle MultiPolygon
-            if (json.geometry.type === 'MultiPolygon') {
-              json.geometry.coordinates.forEach((polygon) => {
-                const positions = convertCoordinatesForCesium(polygon[0]) // Only the first array for the outer boundary
-                viewer.entities.add({
-                  name: json.properties.ADMIN,
-                  polygon: {
-                    hierarchy: Cesium.Cartesian3.fromDegreesArray(positions),
-                    material: Cesium.Color.WHITE, // Replace with logic for color based on properties
-                  },
-                })
+              viewer.entities.add({
+                name: feature.properties.ADMIN,
+                polygon: {
+                  hierarchy: hierarchy,
+                  material: Cesium.Color.WHITE, // Replace with color logic if needed
+                },
               })
             }
-            // Additional else/if blocks to handle other geometry types like Polygon, LineString, etc.
-          })
-        })
-        .catch((error) => console.error('Error:', error))
 
-      // Optional: Add click event listener to display more info
-      viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
-        const pickedEntity = viewer.scene.pick(clickEvent.position)
-        if (Cesium.defined(pickedEntity) && pickedEntity.id) {
-          const entity = pickedEntity.id
-          // Display GDP info or other details
-          console.log('Country: ' + entity.name + ', GDP: ' + entity.gdp)
-        }
-      }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+            // Handle 'MultiPolygon' in a similar way, iterating through each polygon.
+          }
+        })
+        .catch((error) => console.error(error))
+
+      // Helper function to flatten the nested coordinates array
+      function flattenCoordinates(coordArray) {
+        // Assuming coordArray is something like [[lon, lat], [lon, lat], ...]
+        // We flatten it to [lon, lat, lon, lat, ...]
+        return coordArray.flat().reduce((acc, val) => acc.concat(val), [])
+      }
+
+      // // Optional: Add click event listener to display more info
+      // viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
+      //     const pickedEntity = viewer.scene.pick(clickEvent.position)
+      //     if (Cesium.defined(pickedEntity) && pickedEntity.id) {
+      //         const entity = pickedEntity.id
+      //         // Display GDP info or other details
+      //         console.log('Country: ' + entity.name + ', GDP: ' + entity.gdp)
+      //     }
+      // }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     </script>
   </body>
 </html>
