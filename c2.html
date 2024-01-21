@@ -63,23 +63,20 @@
           .reduce((acc, value) => acc.concat([value[0], value[1]]), [])
       }
 
-      fetch('https://andrewacomb.me/countries.geojson') // Replace with the URL to your GeoJSON file
+      fetch('https://andrewacomb.me/custom.geo.json') // Replace with the URL to your GeoJSON file
         .then((response) => response.json())
         .then((data) => {
           const features = data.features
           for (const feature of features) {
-            console.log(feature)
-            let coordinates = feature.geometry.coordinates
+            const geometryType = feature.geometry.type
+            const coordinates = feature.geometry.coordinates
 
-            // For 'Polygon' type geometries
-            if (feature.geometry.type === 'Polygon') {
-              // The first array in 'coordinates' is the outer boundary.
-              // Additional arrays would be holes.
-              console.log(coordinates)
-              console.log(Cesium.defined(coordinates))
-              const hierarchy = new Cesium.PolygonHierarchy(
-                Cesium.Cartesian3.fromDegreesArrayHeights(coordinates)
-              )
+            if (geometryType === 'Polygon') {
+              // Flatten the first array in 'coordinates' and convert to Cartesian3
+              const flatCoords = [].concat(...coordinates[0])
+              const cartesianCoords =
+                Cesium.Cartesian3.fromDegreesArray(flatCoords)
+              const hierarchy = new Cesium.PolygonHierarchy(cartesianCoords)
 
               viewer.entities.add({
                 name: feature.properties.ADMIN,
@@ -88,9 +85,23 @@
                   material: Cesium.Color.WHITE, // Replace with color logic if needed
                 },
               })
-            }
+            } else if (geometryType === 'MultiPolygon') {
+              for (const polygon of coordinates) {
+                // Handle each polygon in MultiPolygon
+                const flatCoords = [].concat(...polygon[0])
+                const cartesianCoords =
+                  Cesium.Cartesian3.fromDegreesArray(flatCoords)
+                const hierarchy = new Cesium.PolygonHierarchy(cartesianCoords)
 
-            // Handle 'MultiPolygon' in a similar way, iterating through each polygon.
+                viewer.entities.add({
+                  name: feature.properties.ADMIN,
+                  polygon: {
+                    hierarchy: hierarchy,
+                    material: Cesium.Color.WHITE, // Replace with color logic if needed
+                  },
+                })
+              }
+            }
           }
         })
         .catch((error) => console.error(error))
@@ -101,16 +112,6 @@
         // We flatten it to [lon, lat, lon, lat, ...]
         return coordArray.flat().reduce((acc, val) => acc.concat(val), [])
       }
-
-      // // Optional: Add click event listener to display more info
-      // viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
-      //     const pickedEntity = viewer.scene.pick(clickEvent.position)
-      //     if (Cesium.defined(pickedEntity) && pickedEntity.id) {
-      //         const entity = pickedEntity.id
-      //         // Display GDP info or other details
-      //         console.log('Country: ' + entity.name + ', GDP: ' + entity.gdp)
-      //     }
-      // }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     </script>
   </body>
 </html>
