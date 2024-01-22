@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Interactive Globe PoC</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.82/Build/Cesium/Cesium.js"></script>
+    <link
+      href="https://cesium.com/downloads/cesiumjs/releases/1.82/Build/Cesium/Widgets/widgets.css"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body,
+      #cesiumContainer {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="cesiumContainer"></div>
+    <script>
+      Cesium.Ion.defaultAccessToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMTgyMmJhYS1iNzlmLTRjZTAtOGU3NC0xMzM4Mjk5NzViM2MiLCJpZCI6MTg4ODczLCJpYXQiOjE3MDQ4NjY2NjV9.qRsnX5M0eRi8fW_zrSloHOxlfOZ37HxCu1OLLmEiF9k'
+
+      const viewer = new Cesium.Viewer('cesiumContainer', {
+        imageryProvider: new Cesium.MapboxImageryProvider({
+          mapId: 'mapbox.country-boundaries-v1',
+          accessToken:
+            'pk.eyJ1IjoiYWNvbWJhbmRyZXciLCJhIjoiY2xyMmpodWh0MTJrMjJqcW00bTh4dzN1bSJ9.5k4CrWCAUNheeh6FAAhcLw',
+        }),
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        fullscreenButton: false,
+        vrButton: false,
+        infoBox: false,
+        creditContainer: undefined,
+      })
+
+      viewer.scene.sun.show = false
+      viewer.scene.skyAtmosphere.show = false
+      viewer.scene.backgroundColor = Cesium.Color.BLACK
+      viewer.cesiumWidget.creditContainer.style.display = 'none'
+
+      function getColorByGDP(gdp) {
+        const minGDP = 100
+        const maxGDP = 1000000
+        const normalizedGDP = Math.min(
+          Math.max((gdp - minGDP) / (maxGDP - minGDP), 0),
+          1
+        )
+        return new Cesium.Color(normalizedGDP, normalizedGDP, normalizedGDP, 1)
+      }
+
+      function addCountryPolygon(geometryType, coordinates, gdp) {
+        let hierarchy
+        if (geometryType === 'Polygon') {
+          const flatCoords = [].concat(...coordinates[0])
+          const cartesianCoords = Cesium.Cartesian3.fromDegreesArray(flatCoords)
+          hierarchy = new Cesium.PolygonHierarchy(cartesianCoords)
+        } else if (geometryType === 'MultiPolygon') {
+          for (const polygon of coordinates) {
+            const flatCoords = [].concat(...polygon[0])
+            const cartesianCoords =
+              Cesium.Cartesian3.fromDegreesArray(flatCoords)
+            hierarchy = new Cesium.PolygonHierarchy(cartesianCoords)
+            viewer.entities.add({
+              polygon: {
+                hierarchy: hierarchy,
+                material: getColorByGDP(gdp),
+              },
+            })
+          }
+          return
+        }
+
+        viewer.entities.add({
+          polygon: {
+            hierarchy: hierarchy,
+            material: getColorByGDP(gdp),
+          },
+        })
+      }
+
+      fetch('https://andrewacomb.me/custom.geo.json')
+        .then((response) => response.json())
+        .then((data) => {
+          for (const feature of data.features) {
+            addCountryPolygon(
+              feature.geometry.type,
+              feature.geometry.coordinates,
+              feature.properties.gdp_md
+            )
+          }
+        })
+        .catch((error) => console.error(error))
+    </script>
+  </body>
+</html>
